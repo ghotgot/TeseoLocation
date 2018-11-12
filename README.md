@@ -1,5 +1,5 @@
 # TeseoLocation
-This repo contains a GPSProvider example applications based on
+This repo contains a GPS_Provider example applications based on
 mbed OS and built with [mbed-cli](https://github.com/ARMmbed/mbed-cli) meant for building an executable.
 
 Please browse to subdirectories for specific documentation.
@@ -27,7 +27,7 @@ In order to use GPSProvider in mbed OS you need one the following hardware combi
 * A supported target, such as the [NUCLEO-F401RE](http://www.st.com/en/evaluation-tools/nucleo-f401re.html), with an external GPS peripheral, such as an X-NUCLEO-GNSS1A1.
 
 
-The [`GPSProvider`module](https://github.com/apalmieriGH/GPSProvider) provides the GPS APIs on mbed OS.
+The [`GPS_Provider`module](https://os.mbed.com/teams/ST/code/GPS_Provider/) provides the GPS APIs on mbed OS.
 
 Targets for GPS
 ---------------
@@ -45,17 +45,17 @@ __To build the example:__
 1. Clone the repository containing the example:
 
 	```
-	$ git clone https://github.com/apalmieriGH/TeseoLocation.git
+	$ git clone https://github.com/to_be_defined/TeseoLocation.git
 	```
 
 	or, alternatively,
 
 	```
-	$ mbed import https://github.com/apalmieriGH/TeseoLocation.git
+	$ mbed import https://github.com/to_be_defined/TeseoLocation.git
 	```
 
 
-	**Tip:** If you don't have GitHub installed, you can [download a zip file](https://github.com/apalmieriGH/TeseoLocation/archive/master.zip) of the repository.
+	**Tip:** If you don't have GitHub installed, you can [download a zip file](https://github.com/to_be_defined/TeseoLocation/archive/master.zip) of the repository.
 
 2. Update the source tree:
 
@@ -88,7 +88,7 @@ __To run the application on your board:__
 
 __TeseoLocation application description:__
 
-In this application, real time GNSS data received by the Teseo-LIV3F device can be displayed through a serial connection and a serial terminal on a PC. Furthermore the user can run commands enabling three [advanced features](https://github.com/apalmieriGH/Teseo-LIV3F):
+In this application, real time GNSS data received by the Teseo-LIV3F device can be displayed through a serial connection and a serial terminal on a PC. Furthermore the user can run commands enabling three [advanced features](https://github.com/to_be_defined/X_NUCLEO_GNSS1A1):
 * Geofencing
 * Odometer
 * Data Logging
