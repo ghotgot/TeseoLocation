@@ -9,7 +9,8 @@
     }
   ],
   "dependencies": {
-    "GPSProvider": "^1.0.0"
+    "GPS_Provider": "^1.0.0"
+    "X_NUCLEO_GNSS1A1": "^1.0.0"
   },
   "targetDependencies": {},
   "bin": "./source"
