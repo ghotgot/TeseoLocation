@@ -89,8 +89,8 @@ static void _ExecAppCmd(void);
 static int sAppCmd = APP_CMD_IDLE;
 static eGeofenceId geofenceId;
 
-Serial serialDebug(DEBUG_TX_PIN, DEBUG_RX_PIN);
-#define TESEO_APP_LOG_INFO(...)   serialDebug.printf(__VA_ARGS__)
+static BufferedSerial serialDebug(DEBUG_TX_PIN, DEBUG_RX_PIN, 115200);
+#define TESEO_APP_LOG_INFO(...) printf(__VA_ARGS__)
 
 #define WARNING_NOT_RUN_MSG TESEO_APP_LOG_INFO("GNSS is not running. Please, type 'start' to make it runnable.\r\n");
 #define WARNING_ALREADY_RUN_MSG TESEO_APP_LOG_INFO("GNSS is already running.\r\n");
@@ -98,6 +98,11 @@ Serial serialDebug(DEBUG_TX_PIN, DEBUG_RX_PIN);
 static GPSProvider gnss;
 static bool gnssRunning = false;
 static int level = 1;
+
+FileHandle *mbed::mbed_override_console(int fd)
+{
+    return &serialDebug;
+}
 
 void
 locationHandler(const GPSProvider::LocationUpdateParams_t *params)
@@ -126,15 +131,16 @@ _ConsoleRxHandler(void)
 {
   static char cmd[32] = {0};
   char        ch;
+  char        nl = '\n';
 
   while(true) {
         while (!serialDebug.readable()) {
-            Thread::yield(); // Allow other threads to run
+            ThisThread::yield(); // Allow other threads to run
         }
-        ch = serialDebug.getc();
-        serialDebug.putc(ch);
+        serialDebug.read(&ch, 1);
+        serialDebug.write((const void *)&ch, 1);
         if (ch == '\r') {
-            serialDebug.putc('\n');
+            serialDebug.write((const void *)&nl, 1);
             if (strlen(cmd) > 0) {
                 _AppCmdProcess(cmd);
                 memset(cmd, 0, sizeof(cmd));
@@ -317,25 +323,22 @@ _ExecAppCmd(void)
       } else {
         TESEO_APP_LOG_INFO("get device info.\r\n");
         if(gnss.haveDeviceInfo()) {
-          TESEO_APP_LOG_INFO(gnss.getDeviceInfo());
+          TESEO_APP_LOG_INFO("%s", gnss.getDeviceInfo());
         }
         TESEO_APP_LOG_INFO("\r\n");
       }
       break;
     }
-    Thread::yield(); // Allow other threads to run
+    ThisThread::yield(); // Allow other threads to run
   }
 }
 
 int main() {
   Thread consoleThread;
   Thread cmdThread;
-  
-  consoleThread.set_priority(osPriorityIdle);
-  cmdThread.set_priority(osPriorityIdle);
 
-  serialDebug.format(8, Serial::None, 1);
-  serialDebug.baud(115200);
+  TESEO_APP_LOG_INFO("Starting GNSS...\r\n");
+
   consoleThread.start(_ConsoleRxHandler);
   
   gnss.reset();
@@ -344,9 +347,9 @@ int main() {
 
   _AppShowCmd();
   cmdThread.start(_ExecAppCmd);
-
+  
   while(1) {
-    Thread::yield();
+    ThisThread::yield();
   }
   
 }
@@ -361,28 +364,28 @@ _AppShowLastPosition(const GPSProvider::LocationUpdateParams_t *lastLoc)
     sprintf(msg,"Latitude:\t\t[ %.0f' %d'' ]\n\r",
             (lastLocation.lat - ((int)lastLocation.lat % 100)) / 100, 
             ((int)lastLocation.lat % 100));          
-    TESEO_APP_LOG_INFO(msg);
+    TESEO_APP_LOG_INFO("%s", msg);
     
     sprintf(msg,"Longitude:\t\t[ %.0f' %d'' ]\n\r",
             (lastLocation.lon - ((int)lastLocation.lon % 100)) / 100, 
             ((int)lastLocation.lon % 100));          
-    TESEO_APP_LOG_INFO(msg);
+    TESEO_APP_LOG_INFO("%s", msg);
     
     sprintf(msg,"Altitude:\t\t[ %.2f ]\n\r",
             lastLocation.altitude);
-    TESEO_APP_LOG_INFO(msg);
+    TESEO_APP_LOG_INFO("%s", msg);
     
     sprintf(msg,"Satellites locked:\t[ %d ]\n\r",
             lastLocation.numGPSSVs);
-    TESEO_APP_LOG_INFO(msg);
+    TESEO_APP_LOG_INFO("%s", msg);
     
     sprintf(msg, "UTC:\t\t\t[ %d ]\n\r",
             (int)lastLocation.utcTime);
-    TESEO_APP_LOG_INFO(msg);
+    TESEO_APP_LOG_INFO("%s", msg);
     
   } else {
     sprintf(msg, "Last position wasn't valid.\n\n\r");
-    TESEO_APP_LOG_INFO(msg);
+    TESEO_APP_LOG_INFO("%s", msg);
   }
 }
 
