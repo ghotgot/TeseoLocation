@@ -42,6 +42,49 @@
 ********************************************************************************
 */
 
+
+
+
+
+
+//#include "platform/mbed_thread.h"
+#include "Sht31.h"
+#define MAXIMUM_BUFFER_SIZE
+#include <stdint.h>
+using namespace std;
+//sda, scl
+Sht31   temp_sensor(I2C_SDA, I2C_SCL);
+    float t;
+    float h;
+
+Thread thread1;
+Thread thread2;
+DigitalOut led1(LED1);
+//PC_6=D8, PC7_7=D2
+UnbufferedSerial pc(USBTX, USBRX);
+UnbufferedSerial  dev(D8, D2 );
+
+int dev_RxLen=0;
+int pc_RxLen=0;
+int hh,tt;
+    
+ char dev_RxBuf[128] = {0};
+char pc_RxBuf[128] = {0};
+  char buf4[128] = {0};
+char buf_datchik[128] = {0};
+
+  int lat_int;
+  int lon_int;
+  float Lastlocation_lat; 
+  float Lastlocation_lon;
+  //uint32_t Lastlocation_lat; 
+//uint32_t Lastlocation_lon;
+
+
+
+
+
+
 #include "mbed.h"
 #include "Teseo.h"
 #include "GPSProvider.h"
@@ -332,6 +375,145 @@ _ExecAppCmd(void)
     ThisThread::yield(); // Allow other threads to run
   }
 }
+//*********************************************
+
+
+
+  
+
+// обработчики прерываний по приему байта с устройства и с компа- просто заполняют буферы свои- при достижении 64 байта в буфере -начинают заполнять снова с нуля
+// нужны только для отладки - в рабочем режиме- тключить для экономии энергии
+void dev_recv()
+{
+if (dev_RxLen<63){
+
+    dev.read(&dev_RxBuf[dev_RxLen], sizeof(dev_RxBuf[dev_RxLen]));    //  Got 1 char
+         
+    dev_RxLen++;
+}
+else dev_RxLen=0;
+    }
+
+ 
+void pc_recv()
+{
+    if (pc_RxLen<63){
+    pc.read(&pc_RxBuf[pc_RxLen], sizeof(pc_RxBuf[pc_RxLen]));  //  Got 1 char
+    pc_RxLen++;
+    }
+else pc_RxLen=0;
+}
+
+void connect_to_server_lora_and_recieve_otvety()
+{                   
+  
+     
+        
+    while (1) {    
+    //нужно только для отладки -можно убрать
+    //распечатать на консоль то что пришло  с рак811
+ for (uint8_t i = 0; i < dev_RxLen; i++) {  
+pc.write(&dev_RxBuf[i], sizeof(dev_RxBuf[i]));}
+ 
+     //распечатать на консоль то что пришло с компа    
+ //   for (uint8_t i = 0; i < pc_RxLen; i++) {  
+ //   pc.write(&pc_RxBuf[i], sizeof(pc_RxBuf[i]));}
+    
+
+        ThisThread::sleep_for(1s);
+        }
+   }
+   
+
+void read_datchik_and_send_to_server_lora()
+{
+    //int int_lat;
+   //  int lat_int;
+   // int lon_int;
+     while (true) {
+        t = temp_sensor.readTemperature();
+        h = temp_sensor.readHumidity();
+        int tt=round(t); //из-за того что %f не работает пришлось посылать округленные показания датчиков
+        sprintf(buf_datchik,"temp= %d",tt); 
+        for (uint8_t i = 0; i < 8; i++) {  
+    pc.write(&buf_datchik[i], sizeof(buf_datchik[i]));}
+     int hh=round(h);
+        sprintf(buf_datchik,"himi= %d",hh); 
+        for (uint8_t i = 0; i < 8; i++) {  
+    pc.write(&buf_datchik[i], sizeof(buf_datchik[i]));}
+    
+    
+    
+          //послать округленные до целого данные с датчика темп-ры и без пробела с датчика влажности на  рак811
+   //  sprintf(buf4,"at+send=lora:1:%d %d\r\n",tt,hh);
+  
+  /*
+      sprintf(buf4,"at+send=lora:1:%d%d\r\n",tt,hh);    
+    for (uint8_t i = 0; i < 21; i++) {  
+    dev.write(&buf4[i], sizeof(buf4[i]));
+    //продублировать это в консоль
+    pc.write(&buf4[i], sizeof(buf4[i]));} 
+ */
+
+ //int_lat = round(lastLocation.lat); 
+
+
+
+
+
+
+
+        //послать округленные до целого данные с  без пробела  на  рак811
+   //  sprintf(buf4,"at+send=lora:1:%d %d\r\n",tt,hh);
+  
+    // sprintf(buf4,"at+send=lora:1:%%X\r\n",Lastlocation_lat,Lastlocation_lon); 
+/*
+buf4[15]=0;
+buf4[16]=0;            
+buf4[17]=0;            
+buf4[18]='0'; 
+
+buf4[19]= buf4[23];                                 
+buf4[20]= buf4[24];                                 
+buf4[21]= buf4[25];                                 
+buf4[22]= buf4[26];     
+
+buf4[23]='0';
+buf4[24]='0';            
+buf4[25]='0';            
+buf4[26]='0'; 
+
+*/
+/*
+  
+          for (uint8_t i = 0; i < 33 ; i++) {  
+    dev.write(&buf4[i], sizeof(buf4[i]));
+    //продублировать это в консоль
+    pc.write(&buf4[i], sizeof(buf4[i]));} 
+ 
+*/
+
+
+///DCNFDRF
+    //Lastlocation_lat= lastLocation.lat*100;
+    Lastlocation_lon= 55.56881010;
+      sprintf(buf4,"at+send=lora:1:%f%f\r\n",Lastlocation_lat,Lastlocation_lon); 
+
+  
+          for (uint8_t i = 0; i < 35 ; i++) {  
+    dev.write(&buf4[i], sizeof(buf4[i]));
+    //продублировать это в консоль
+    pc.write(&buf4[i], sizeof(buf4[i]));} 
+ 
+//gfghf
+  
+
+    
+    
+         
+       ThisThread::sleep_for(2s);
+}
+}
 
 int main() {
   Thread consoleThread;
@@ -340,6 +522,7 @@ int main() {
   TESEO_APP_LOG_INFO("Starting GNSS...\r\n");
 
   consoleThread.start(_ConsoleRxHandler);
+
   
   gnss.reset();
   gnss.onLocationUpdate(locationHandler);
@@ -347,8 +530,52 @@ int main() {
 
   _AppShowCmd();
   cmdThread.start(_ExecAppCmd);
+
+  
+pc.attach(&pc_recv, UnbufferedSerial::RxIrq);
+    dev.attach(&dev_recv, UnbufferedSerial::RxIrq);
+        
+    pc.baud(115200);
+    dev.baud(115200);
+    
+//фориат передачи -по умолчанию - поэтому не нужно
+  //     pc.format(8, BufferedSerial::None,  1    );
+   //     dev.format(8, BufferedSerial::None, 1    );
+
+   sprintf(buf4,"at+join\r\n"); 
+  for (uint8_t i = 0; i < 9; i++) {  
+    dev.write(&buf4[i], sizeof(buf4[i]));
+//распечатать на консоль то что послано на  рак811
+//    pc.write(&buf4[i], sizeof(buf4[i]));
+        }  
+         ThisThread::sleep_for(4s);  
+
+    thread1.start(read_datchik_and_send_to_server_lora);
+    thread2.start(connect_to_server_lora_and_recieve_otvety);
+
+
+/********добавил**********/
+sAppCmd=APP_CMD_START;
+_ExecAppCmd();
+  //gnss.start();
+  /*************/
+//**************************
+ThisThread::sleep_for(30s);
+/********добавил**********/
+
+  //gnss.start();
+  /*************/
+
+//**************************
   
   while(1) {
+     //**************************
+     sAppCmd=APP_CMD_GETLASTLOC;
+    _ExecAppCmd();
+    ThisThread::sleep_for(5s);
+/********добавил**********/ 
+ 
+
     ThisThread::yield();
   }
   
@@ -358,17 +585,29 @@ static void
 _AppShowLastPosition(const GPSProvider::LocationUpdateParams_t *lastLoc)
 {
   char msg[256];
+
   GPSProvider::LocationUpdateParams_t lastLocation = *lastLoc;
 
-  if(lastLocation.valid == true) {
-    sprintf(msg,"Latitude:\t\t[ %.0f' %d'' ]\n\r",
+  if(lastLocation.valid == true) 
+  {
+       //Lastlocation_lat= lastLocation.lat; 
+       //12.01
+       //Lastlocation_lat= 54.43; 
+    sprintf(msg,"Latitude integer :\t\t[ %d'' ]\n\r",lat_int);
+           
+               
+            sprintf(msg,"Latitude:\t\t[ %.0f' %d'' ]\n\r",
             (lastLocation.lat - ((int)lastLocation.lat % 100)) / 100, 
-            ((int)lastLocation.lat % 100));          
+            ((int)lastLocation.lat % 100));               
     TESEO_APP_LOG_INFO("%s", msg);
     
+    //Lastlocation_lon= lastLocation.lon; 12.01
+     //Lastlocation_lon= 55.56;  
+    sprintf(msg,"Longitude integer :\t\t[ %d'' ]\n\r",lon_int);
+
     sprintf(msg,"Longitude:\t\t[ %.0f' %d'' ]\n\r",
             (lastLocation.lon - ((int)lastLocation.lon % 100)) / 100, 
-            ((int)lastLocation.lon % 100));          
+           ((int)lastLocation.lon % 100));          
     TESEO_APP_LOG_INFO("%s", msg);
     
     sprintf(msg,"Altitude:\t\t[ %.2f ]\n\r",
@@ -382,7 +621,13 @@ _AppShowLastPosition(const GPSProvider::LocationUpdateParams_t *lastLoc)
     sprintf(msg, "UTC:\t\t\t[ %d ]\n\r",
             (int)lastLocation.utcTime);
     TESEO_APP_LOG_INFO("%s", msg);
-    
+
+
+//Lastlocation_lat= lastLocation.lat*100;
+//return Lastlocation_lat;
+    //Foo(Lastlocation_lat); 
+//пробуем вернуть переменную из функции 12.01
+
   } else {
     sprintf(msg, "Last position wasn't valid.\n\n\r");
     TESEO_APP_LOG_INFO("%s", msg);
